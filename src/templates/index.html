@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiSync - Logistics Documentation System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-600 p-4">
+        <div class="container mx-auto">
+            <h1 class="text-white text-2xl font-bold">LogiSync</h1>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Route Planning Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4">Route Planning</h2>
+                <form id="routeForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium">Start Location</label>
+                        <input type="text" name="start" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">End Location</label>
+                        <input type="text" name="end" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Waypoints (one per line)</label>
+                        <textarea name="waypoints" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md">Generate Route</button>
+                </form>
+            </div>
+
+            <!-- Document Generation Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4">Document Generation</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-medium">Customer Communications</h3>
+                        <div class="mt-2 space-x-2">
+                            <button onclick="generateDocument('delivery_notification')" class="bg-green-500 text-white px-3 py-1 rounded-md">Delivery Notice</button>
+                            <button onclick="generateDocument('delay_notification')" class="bg-yellow-500 text-white px-3 py-1 rounded-md">Delay Notice</button>
+                            <button onclick="generateDocument('pod')" class="bg-purple-500 text-white px-3 py-1 rounded-md">Proof of Delivery</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-medium">Compliance Documents</h3>
+                        <div class="mt-2 space-x-2">
+                            <button onclick="generateDocument('fmcsa')" class="bg-red-500 text-white px-3 py-1 rounded-md">FMCSA Report</button>
+                            <button onclick="generateDocument('safety')" class="bg-blue-500 text-white px-3 py-1 rounded-md">Safety Inspection</button>
+                            <button onclick="generateDocument('environmental')" class="bg-green-500 text-white px-3 py-1 rounded-md">Environmental Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Generated Content</h2>
+            <pre id="results" class="bg-gray-100 p-4 rounded-md overflow-auto max-h-96"></pre>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('routeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                locations: [
+                    formData.get('start'),
+                    ...formData.get('waypoints').split('\n').filter(x => x.trim()),
+                    formData.get('end')
+                ],
+                cargo_details: {},
+                time_constraints: {}
+            };
+
+            try {
+                const response = await fetch('/api/v1/routes/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                document.getElementById('results').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('results').textContent = 'Error: ' + error.message;
+            }
+        });
+
+        async function generateDocument(type) {
+            try {
+                const response = await fetch(`/api/v1/compliance-documents/${type}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            timestamp: new Date().toISOString(),
+                            type: type
+                        }
+                    })
+                });
+                const result = await response.json();
+                document.getElementById('results').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('results').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
