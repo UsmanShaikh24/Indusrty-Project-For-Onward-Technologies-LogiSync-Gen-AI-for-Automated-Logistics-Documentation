@@ -1,4 +1,4 @@
-# LogiSync V2
+# LogiSync-Gen AI for Automated Logistics Documentation
 
 A comprehensive logistics documentation system powered by AI for creating, updating, and optimizing logistics documentation.
 
